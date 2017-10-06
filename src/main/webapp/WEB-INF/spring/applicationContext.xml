@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/context
+http://www.springframework.org/schema/context/spring-context.xsd
+http://www.springframework.org/schema/util
+http://www.springframework.org/schema/util/spring-util.xsd
+http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring
+http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring/ehcache-spring-1.2.xsd">
+
+    <context:property-placeholder location="/WEB-INF/spring/spring.properties" />
+
+    <context:component-scan base-package="com.bgip"/>
+
+    
+     <bean id="mongo" class="org.springframework.data.mongodb.core.MongoFactoryBean">
+        <property name="host" value="${mongo.host}" />
+        <property name="port" value="${mongo.port}" />
+   </bean>
+     
+    <!-- MongoTemplate for connecting and quering the documents in the database -->
+   <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg name="mongo" ref="mongo" />
+        <constructor-arg name="databaseName" value="${mongo.db}" />
+         <constructor-arg name="userCredentials" ref="mongoCredentials"/>
+    </bean>
+ 
+ 
+   <bean id="mongoCredentials" class="org.springframework.data.authentication.UserCredentials">
+        <constructor-arg name="username" value="${mongo.username}" />
+        <constructor-arg name="password" value="${mongo.password}" />
+    </bean>  
+    
+        <util:properties id="mainControllerProperties"
+                     location="/WEB-INF/spring/application.properties"/>
+   
+ 
+
+	   
+
+</beans>

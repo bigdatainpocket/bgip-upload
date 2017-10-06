@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+    <!-- By default, the configuration file will be scanned for changes once every minute -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logback.loglocation}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${logback.loglocation}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 5 days' worth of history -->
+            <maxHistory>5</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date %level [%thread] %logger{1} [%file:%line] %msg%n</pattern>
+        </encoder>
+    </appender>
+   
+    <logger name="com.bgip" level="${logback.level}"/>
+    <root level="${logback.level}">
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>
