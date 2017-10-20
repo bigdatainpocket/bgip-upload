@@ -1,31 +1,17 @@
 package com.bgip.exception;
 
-import java.util.Date;
-
 import javax.ws.rs.core.Response.Status;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BgipException extends Exception {
 
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private  String errorCode = null;
 	private Status status = null;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BgipException.class);
 
-
-
-    // -------------------------------------------------------------------------
-    // Constructors
-    // -------------------------------------------------------------------------
-    /**
-     * Create exception object with the default message.
-     */
 
     public BgipException(String errorCode, String message){
     	super(message);

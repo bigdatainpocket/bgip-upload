@@ -11,7 +11,8 @@ import com.bgip.model.upload.FolderResponse;
 import com.bgip.model.upload.UploadRequest;
 import com.bgip.model.ResponseBean;
 import com.bgip.model.upload.FilesBean;
-import com.bgip.model.upload.FoldersBean;
+import com.bgip.model.upload.FolderRequest;
+import com.bgip.model.upload.FolderBean;
 
 @Service
 public class UploadServices {
@@ -21,19 +22,19 @@ public class UploadServices {
 	@Autowired
 	UploadDAO uploadDao;
 
-	public List<FolderResponse> uploadedFiles(List<FolderResponse> folders, String loginUser) throws Exception {
+	public FolderRequest uploadFolder(FolderRequest folder, String loginUser) throws Exception {
 		LOGGER.info("BGIP  uploadedFiles  method call :: ");
-		return uploadDao.uploadedFiles(folders, loginUser);
+		return uploadDao.uploadedFiles(folder, loginUser);
 	}
 
-	public FolderResponse createEmptyFolder(FolderResponse emptyFolder, String loginUser) throws Exception {
+	public FolderBean createEmptyFolder(FolderBean emptyFolder, String loginUser) throws Exception {
 
 		return uploadDao.createEmptyFolder(emptyFolder, loginUser);
 	}
 
-	public List<FilesBean> getFilesByFolderId(String folderId, String loginUser) throws Exception {
+	public FolderResponse getFolderDetails(String folderId, String loginUser) throws Exception {
 
-		return uploadDao.getFilesByFolderId(folderId, loginUser);
+		return uploadDao.getFolderDetails(folderId, loginUser);
 	}
 	
 	public FilesBean getFilbyId(String folderId, String loginUser) throws Exception {
@@ -41,7 +42,7 @@ public class UploadServices {
 		return uploadDao.getFileById(folderId, loginUser);
 	}
 
-	public UploadRequest getAllFiles(String loginUser) throws Exception {
+	public FolderResponse getAllFiles(String loginUser) throws Exception {
 		LOGGER.info("BGIP  getAllFiles  method call :: ");
 		return uploadDao.getAllFiles(loginUser);
 	}
@@ -73,16 +74,16 @@ public class UploadServices {
 	
 	
 	
-	public void downloadFiles(FoldersBean files) throws Exception {
+	public void downloadFiles(FolderBean files) throws Exception {
 		LOGGER.info("BGIP  downloadFiles  method call :: ");
 	}
 
 
-	public void getAllFilesByFolderId(FoldersBean files) throws Exception {
+	public void getAllFilesByFolderId(FolderBean files) throws Exception {
 		LOGGER.info("BGIP  getAllFilesByFolderId  method call :: ");
 	}
 
-	public void getFiles(FoldersBean files) throws Exception {
+	public void getFiles(FolderBean files) throws Exception {
 		LOGGER.info("BGIP  getFiles  method call :: ");
 	}
 	

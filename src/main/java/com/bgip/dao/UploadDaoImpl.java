@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.apache.commons.collections.CollectionUtils;
 import org.bson.types.ObjectId;
-
 import java.util.ArrayList;
 import java.util.List;
 import com.bgip.constants.BgipConstants;
@@ -15,7 +14,8 @@ import com.bgip.model.upload.FolderResponse;
 import com.bgip.model.upload.UploadRequest;
 import com.bgip.model.ResponseBean;
 import com.bgip.model.upload.FilesBean;
-import com.bgip.model.upload.FoldersBean;
+import com.bgip.model.upload.FolderRequest;
+import com.bgip.model.upload.FolderBean;
 import com.bgip.mongo.MongoManager;
 
 @Component
@@ -30,135 +30,199 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 	@Autowired
 	StatusCodes statusCodes;
 
-	public List<FolderResponse> uploadedFiles(List<FolderResponse> folderList, String loginUser) throws Exception {
-		List<FolderResponse> list = new ArrayList<FolderResponse>();
-		// for (FolderResponse folder : folderList) {
-		// folder.setUserName(loginUser);
-		// list.add(createEmptyFolder(folder));
-		// }
-
-		if (CollectionUtils.isNotEmpty(folderList)) {
-			for (FolderResponse folderRes : folderList) {
-				list.add(createEmptyFolder(folderRes, loginUser));
-			}
+	public FolderRequest uploadedFiles(FolderRequest folderRequest, String loginUser) throws Exception {
+		
+		if( CommonUtils.isEmpty(folderRequest.getUserName()) && CollectionUtils.isEmpty(folderRequest.getFileList())) {
+			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
 		}
-
-		return list;
-	}
-
-	public FolderResponse createFolders(FolderResponse folder) throws Exception {
-		FolderResponse result = null;
+		
+		if( CollectionUtils.isEmpty(folderRequest.getFileList())) {
+			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! file list doesn't empty ");
+		}
+		
+		
+		folderRequest.setUserName(loginUser);
+		FolderRequest finalResult = new FolderRequest();
 		List<FilesBean> fileList = new ArrayList<FilesBean>();
-		FoldersBean folderBean = new FoldersBean();
-
-		folderBean.setCreated(folder.getCreated());
-		folderBean.setLink(folder.getLink());
-		if (CommonUtils.isEmpty(folder.getParentId())) {
-			folderBean.setParentId("0");
-			folderBean.setFolderName(Long.toString(System.currentTimeMillis()));
-		} else {
-			folderBean.setParentId(folder.getParentId());
-			folderBean.setFolder(true);
-			folderBean.setFolderName(folder.getFolderName());
-		}
-		folderBean.setUserName(folder.getUserName());
-
-		FoldersBean folderBean2 = (FoldersBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
-				folderBean);
-		System.out.println("  Result folderBean2 : " + folderBean2.toString());
-
-		if (CollectionUtils.isNotEmpty(folder.getFiles())) {
-			for (FilesBean file : folder.getFiles()) {
-				file.setFolderId(folderBean2.getId());
-				// FilesBean file1 = ;
-				fileList.add(createFile(file));
-			}
-		}
-		result = mongoManager.getObjectByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "id",
-				folderBean2.getId(), FolderResponse.class);
-		result.setFiles(fileList);
-		return result;
-	}
-
-	// Create File by providing FolderId
-	public FilesBean createFile(FilesBean file) throws Exception {
-		FilesBean fileFromDB = null;
-		if (file != null) {
-			fileFromDB = (FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file);
-		}
-		return fileFromDB;
-	}
-
-	public FolderResponse createEmptyFolder(FolderResponse emptyFolder, String loginUser) throws Exception {
-		FoldersBean folder = new FoldersBean();
-		List<FilesBean> fileList = new ArrayList<FilesBean>();
-		FolderResponse result = null;
-		FoldersBean folderBean2 = null;
-		folder.setUserName(loginUser);
-		if (CommonUtils.isEmpty(emptyFolder.getParentId())) {
-			folder.setParentId("0");
-		} else {
-			folder.setParentId(emptyFolder.getParentId());
-			folder.setFolder(true);
-		}
-		if (CommonUtils.isEmpty(emptyFolder.getFolderName())) {
-			folder.setFolderName(Long.toString(System.currentTimeMillis()));
-		} else {
-			folder.setFolderName(emptyFolder.getFolderName());
-		}
-		if (CommonUtils.isEmpty(emptyFolder.getLink())) {
-			folder.setLink("");
-		} else {
-			folder.setLink(emptyFolder.getLink());
-		}
-		try {
-			folderBean2 = (FoldersBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, folder);
-
-			if (CollectionUtils.isNotEmpty(emptyFolder.getFiles())) {
-				for (FilesBean file : emptyFolder.getFiles()) {
-					file.setFolderId(folderBean2.getId());
-					file.setUserName(folderBean2.getUserName());
-					;
+		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
+			finalResult = createFolder(folderRequest);
+		}else {
+			if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+				for( FilesBean file : folderRequest.getFileList()) {
+					file.setUserName(loginUser);
 					fileList.add(createFile(file));
 				}
 			}
-			result = mongoManager.getObjectByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "id",
-					folderBean2.getId(), FolderResponse.class);
-			result.setFiles(fileList);
+			finalResult.setFileList(fileList);
+		}
+		
+		return finalResult;
+	}
+	
+	// Create File by providing FolderId
+		public FilesBean createFile(FilesBean file) throws Exception {
+			FilesBean fileFromDB = new FilesBean();
+			if (file != null) {
+				if(CommonUtils.isEmpty(file.getFolderId()) ) {
+					file.setFolderId("0");
+				}
+				fileFromDB = (FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file);
+			}
+			return fileFromDB;
+		}
+	
+	
+	
+	
+	public FolderRequest createFolder( FolderRequest folderRequest) throws Exception{
+		
+		List<FilesBean> files = new ArrayList<FilesBean>();
+		FolderBean folder = new FolderBean();
+		
+		if( CommonUtils.isEmpty(folderRequest.getParentFolderId())) {
+			folder.setParentFolderId("0");
+		}else {
+			folder.setParentFolderId(folderRequest.getParentFolderId());
+		}
+		folder.setUserName(folderRequest.getUserName());
+		folder.setFolderName(folderRequest.getFolderName());
+		if( CommonUtils.isNotEmpty(folderRequest.getLink())) {
+			folder.setLink(folderRequest.getLink());
+		}
+		folder.setCreated(folderRequest.getCreated());
+		
+		
+		FolderBean folderFromDB = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,	folder);
+	
+		if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+			for( FilesBean file : folderRequest.getFileList() ) {
+				file.setFolderId(folderFromDB.getId());
+				file.setUserName(folderFromDB.getUserName());
+				files.add((FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file));
+			}
+		}
+		FolderRequest result = mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, folderFromDB.getId(), FolderRequest.class);
+		result.setFileList(files);
+		
+		
+		return result;
+	}
+	
+	
+	
+	public FolderResponse getAllFiles(String loginUser) throws Exception {
+		FolderResponse FolderFromDB = new FolderResponse();
+		FolderFromDB.setUserName(loginUser);
+		FolderFromDB.setFolderList(getSubFolderList("0",loginUser ));
+		FolderFromDB.setFileList(getFilesByFolderId("0",loginUser ));
+		
+		return FolderFromDB;
+	}
+	
+	public FolderResponse getAllDriveFolders(String loginUser) throws Exception {
+		FolderResponse FolderFromDB = new FolderResponse();
+		FolderFromDB.setUserName(loginUser);
+		FolderFromDB.setFolderList(getSubFolderList("0",loginUser ));
+		return FolderFromDB;
+	}
+	
+	
+	
+	
+	public FolderResponse getFolderDetails(String folderId, String loginUser) throws Exception {
+		FolderResponse FolderFromDB = new FolderResponse();
+		if( folderId.equals("0")) {
+			FolderFromDB = getAllDriveFolders(loginUser);
+		}else {
+			 FolderFromDB = mongoManager.getObjectByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "id", folderId, FolderResponse.class);
+				
+				if( FolderFromDB ==null ) {
+					throw new BgipException(StatusCodes.NOT_FOUND, "  Error in getFolderDetails Api !! FolderId doesn't exist ");
+				}
+				FolderFromDB.setFolderList(getSubFolderList(folderId,loginUser ));
+				FolderFromDB.setFileList(getFilesByFolderId(folderId,loginUser ));
+		}
+		
+		return FolderFromDB;
+	}
+	
+	
+	public List<FilesBean> getFilesByFolderId(String folderId, String loginUser) throws Exception {
+		try {
+			return mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FILES_COLLECTION, "folderId", folderId,
+					"userName", loginUser, FilesBean.class);
+		}catch (Exception e) {
+			e.printStackTrace();
+			throw new BgipException(StatusCodes.NOT_FOUND, " Error in getFilesByFolderId Api !! file list doesn't exist ");
+		}
+	}
+	
+	public List<FolderBean> getSubFolderList(String folderId, String loginUser) throws Exception {
+		try {
+			return mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "parentFolderId", folderId,
+					"userName", loginUser, FolderBean.class);
+		}catch (Exception e) {
+			e.printStackTrace();
+			throw new BgipException(StatusCodes.NOT_FOUND, " Error in getSubFolderList Api !! file list doesn't exist ");
+		}
+		
+	}
+
+	
+	
+//	public FolderResponse createFolders(FolderResponse folder) throws Exception {
+//		FolderResponse result;
+//		List<FilesBean> fileList = new ArrayList<FilesBean>();
+//		FolderBean folderBean = new FolderBean();
+//
+//		folderBean.setCreated(folder.getCreated());
+//		if( CommonUtils.isNotEmpty(folder.getLink())) {
+//			folderBean.setLink(folder.getLink());
+//		}
+//		
+//		if (CommonUtils.isEmpty(folder.getFolderName())) {
+//			folderBean.setFolderName(Long.toString(System.currentTimeMillis()));
+//		} else {
+//			folderBean.setFolderName(folder.getFolderName());
+//		}
+//		folderBean.setUserName(folder.getUserName());
+//
+//		FolderBean folderBean2 = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
+//				folderBean);
+//78
+//		if (CollectionUtils.isNotEmpty(folder.getFiles())) {
+//			for (FilesBean file : folder.getFiles()) {
+//				file.setFolderId(folderBean2.getId());
+//				fileList.add(createFile(file));
+//			}
+//		}
+//		result = mongoManager.getObjectByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "id",
+//				folderBean2.getId(), FolderResponse.class);
+//		result.setFiles(fileList);
+//		return result;
+//	}
+
+	
+
+	public FolderBean createEmptyFolder(FolderBean emptyFolder, String loginUser) throws Exception {
+		FolderBean folderFromDB = new FolderBean();
+		if( CommonUtils.isEmpty(emptyFolder.getFolderName())) {
+			emptyFolder.setFolderName("untitled_folder");
+		}
+		if( CommonUtils.isEmpty(emptyFolder.getParentFolderId())) {
+			emptyFolder.setParentFolderId("0");
+		}
+		try {
+			folderFromDB = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, emptyFolder);
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return result;
+		return folderFromDB;
 	}
 
-	public List<FilesBean> getFilesByFolderId(String folderId, String loginUser) throws Exception {
-		System.out.println("folerId : " + folderId);
-		System.out
-				.println("result : " + mongoManager.getObjectsByField(com.bgip.constants.BgipConstants.FILES_COLLECTION,
-						"folderId", folderId, FilesBean.class));
-		// return
-		// mongoManager.getObjectsByField(com.bgip.constants.BgipConstants.FILES_COLLECTION,
-		// "folderId", folderId, FilesBean.class);
-		return mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FILES_COLLECTION, "folderId", folderId,
-				"userName", loginUser, FilesBean.class);
-	}
+	
 
-	public UploadRequest getAllFiles(String loginUser) throws Exception {
-
-		UploadRequest finalResult = new UploadRequest();
-		List<FolderResponse> allFiles = mongoManager.getObjectsByField(
-				com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "userName", loginUser, FolderResponse.class);
-
-		if (CollectionUtils.isNotEmpty(allFiles)) {
-			for (FolderResponse folder : allFiles) {
-				folder.setFiles(getFilesByFolderId(folder.getId(), loginUser));
-			}
-		}
-		finalResult.setFolderList(allFiles);
-
-		return finalResult;
-	}
 
 	@Override
 	public ResponseBean makeFavouriteFolder(String folderId, String loginUser) throws Exception {
@@ -249,7 +313,7 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 	
 
 
-	public void downloadFiles(FoldersBean files) throws Exception {
+	public void downloadFiles(FolderBean files) throws Exception {
 
 	}
 
@@ -259,4 +323,5 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		return null;
 	}
 
+	
 }
