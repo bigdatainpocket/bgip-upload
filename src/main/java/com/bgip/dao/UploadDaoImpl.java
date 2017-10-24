@@ -30,7 +30,7 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 	@Autowired
 	StatusCodes statusCodes;
 
-	public FolderRequest uploadedFiles(FolderRequest folderRequest, String loginUser) throws Exception {
+	public FolderRequest uploadedFiles(FolderRequest folderRequest, String loginUser) throws BgipException {
 		
 		if( CommonUtils.isEmpty(folderRequest.getUserName()) && CollectionUtils.isEmpty(folderRequest.getFileList())) {
 			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
@@ -50,7 +50,12 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 			if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
 				for( FilesBean file : folderRequest.getFileList()) {
 					file.setUserName(loginUser);
-					fileList.add(createFile(file));
+					try {
+						fileList.add(createFile(file));
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 			finalResult.setFileList(fileList);
@@ -74,7 +79,7 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 	
 	
 	
-	public FolderRequest createFolder( FolderRequest folderRequest) throws Exception{
+	public FolderRequest createFolder( FolderRequest folderRequest) throws BgipException{
 		
 		List<FilesBean> files = new ArrayList<FilesBean>();
 		FolderBean folder = new FolderBean();
@@ -92,16 +97,33 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		folder.setCreated(folderRequest.getCreated());
 		
 		
-		FolderBean folderFromDB = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,	folder);
+		FolderBean folderFromDB = new FolderBean();
+		try {
+			folderFromDB = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,	folder);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	
 		if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
 			for( FilesBean file : folderRequest.getFileList() ) {
 				file.setFolderId(folderFromDB.getId());
 				file.setUserName(folderFromDB.getUserName());
-				files.add((FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file));
+				try {
+					files.add((FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file));
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
-		FolderRequest result = mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, folderFromDB.getId(), FolderRequest.class);
+		FolderRequest result = new FolderRequest();
+		try {
+			result = mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, folderFromDB.getId(), FolderRequest.class);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		result.setFileList(files);
 		
 		

@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.bgip.dao.UploadDAO;
+import com.bgip.exception.BgipException;
 import com.bgip.model.upload.FolderResponse;
-import com.bgip.model.upload.UploadRequest;
 import com.bgip.model.ResponseBean;
 import com.bgip.model.upload.FilesBean;
 import com.bgip.model.upload.FolderRequest;
@@ -24,7 +24,14 @@ public class UploadServices {
 
 	public FolderRequest uploadFolder(FolderRequest folder, String loginUser) throws Exception {
 		LOGGER.info("BGIP  uploadedFiles  method call :: ");
-		return uploadDao.uploadedFiles(folder, loginUser);
+		FolderRequest result = new FolderRequest();
+		try {
+			result = uploadDao.uploadedFiles(folder, loginUser);
+		} catch (BgipException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return result;
 	}
 
 	public FolderBean createEmptyFolder(FolderBean emptyFolder, String loginUser) throws Exception {
