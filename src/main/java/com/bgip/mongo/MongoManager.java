@@ -210,6 +210,20 @@ public class MongoManager {
 		return object;
 	}
 	
+	public <T> WriteResult updateByObjectId(String collectionName,
+			String fieldName, ObjectId objectId, String key, boolean b)
+			throws Exception {
+		WriteResult object = null;
+		Query query = new Query(Criteria.where(fieldName).is(objectId));
+		Update update = new Update();
+		update.set(key, b);
+		object = mongoTemplate.updateFirst(query, update,
+				collectionName);
+		return object;
+	}
+	
+
+	
 	public <T> List<T> getObjectsByID(String collectionName, List<String> objectIDList, Class<T> className) throws Exception {
 		List<T> objectList = new ArrayList<T>();
 		Criteria[] orCriteriaArray = new Criteria[objectIDList.size()];

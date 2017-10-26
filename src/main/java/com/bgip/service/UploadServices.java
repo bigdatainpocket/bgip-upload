@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.bgip.constants.StatusCodes;
 import com.bgip.dao.UploadDAO;
 import com.bgip.exception.BgipException;
 import com.bgip.model.upload.FolderResponse;
@@ -61,11 +63,17 @@ public class UploadServices {
 }
 	
 	public ResponseBean makeFavouriteFile( String fileId, String loginUser) throws Exception{
-		System.out.println("files List 2: "+System.currentTimeMillis());
-		return uploadDao.makeFavouriteFile(fileId, loginUser);
+		ResponseBean res = null;
+		try {
+			res = uploadDao.makeFavouriteFile(fileId, loginUser);
+		} catch (BgipException e) {
+			e.printStackTrace();
+			throw new BgipException(StatusCodes.NOT_FOUND, " File ID Not Found ");
+		}
+		return res;
 	}
 	
-	public List<FolderResponse> getFavouriteFolders( String loginUser) throws Exception{
+	public FolderResponse getFavouriteFolders( String loginUser) throws Exception{
 		System.out.println("folder List 2: "+System.currentTimeMillis());
 		return uploadDao.getFavouriteFolders(loginUser);
 	}

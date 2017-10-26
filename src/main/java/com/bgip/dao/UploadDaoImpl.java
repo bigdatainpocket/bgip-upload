@@ -32,34 +32,60 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 
 	public FolderRequest uploadedFiles(FolderRequest folderRequest, String loginUser) throws BgipException {
 		
-		if( CommonUtils.isEmpty(folderRequest.getUserName()) && CollectionUtils.isEmpty(folderRequest.getFileList())) {
-			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
-		}
-		
-		if( CollectionUtils.isEmpty(folderRequest.getFileList())) {
-			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! file list doesn't empty ");
-		}
-		
-		
 		folderRequest.setUserName(loginUser);
 		FolderRequest finalResult = new FolderRequest();
-		List<FilesBean> fileList = new ArrayList<FilesBean>();
+
 		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
-			finalResult = createFolder(folderRequest);
+				finalResult = createFolder(folderRequest);
 		}else {
-			if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
-				for( FilesBean file : folderRequest.getFileList()) {
-					file.setUserName(loginUser);
-					try {
-						fileList.add(createFile(file));
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+			
+			if( CommonUtils.isNotEmpty(folderRequest.getParentFolderId())) {
+				finalResult.setFolderName("untitled_folder");
+				finalResult = createFolder(folderRequest);
+			}else {
+				
+				if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+					finalResult.setFolderName("untitled_folder");
+					finalResult.setParentFolderId("0");
+					finalResult = createFolder(folderRequest);
+				}else {
+					throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
 				}
 			}
-			finalResult.setFileList(fileList);
 		}
+		
+		
+		
+		
+		
+//		
+//		
+//		if( CommonUtils.isEmpty(folderRequest.getUserName()) && CollectionUtils.isEmpty(folderRequest.getFileList())) {
+//			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
+//		}
+//		
+//		if( CollectionUtils.isEmpty(folderRequest.getFileList())) {
+//			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! file list doesn't empty ");
+//		}
+//		
+//		if( CommonUtils.isEmpty(folderRequest.getFolderName()) && CommonUtils.isNotEmpty(folderRequest.getParentFolderId())) {
+//			
+//		}
+//		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
+//		}else {
+//			if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+//				for( FilesBean file : folderRequest.getFileList()) {
+//					file.setUserName(loginUser);
+//					try {
+//						fileList.add(createFile(file));
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//			finalResult.setFileList(fileList);
+//		}
 		
 		return finalResult;
 	}
@@ -84,6 +110,8 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		List<FilesBean> files = new ArrayList<FilesBean>();
 		FolderBean folder = new FolderBean();
 		
+		System.out.println(" folderRequest parentId : "+folderRequest.getParentFolderId());
+		
 		if( CommonUtils.isEmpty(folderRequest.getParentFolderId())) {
 			folder.setParentFolderId("0");
 		}else {
@@ -101,7 +129,6 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		try {
 			folderFromDB = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,	folder);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	
@@ -169,6 +196,33 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 	}
 	
 	
+	@Override
+	public FolderResponse getFavouriteFolders(String loginUser) throws Exception {
+		FolderResponse finalResult = new FolderResponse();
+		
+		List<FilesBean> fileList = mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FILES_COLLECTION, "userName", loginUser,
+				"favourite", true, FilesBean.class);
+		List<FolderBean> folderList = mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "userName", loginUser,
+				"favourite", true, FolderBean.class);
+		if( fileList != null) {
+			finalResult.setFolderList(folderList);
+		}
+		if( folderList != null) {
+			finalResult.setFileList(fileList);
+		}
+		return finalResult;
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	public List<FilesBean> getFilesByFolderId(String folderId, String loginUser) throws Exception {
 		try {
 			return mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FILES_COLLECTION, "folderId", folderId,
@@ -190,41 +244,6 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		
 	}
 
-	
-	
-//	public FolderResponse createFolders(FolderResponse folder) throws Exception {
-//		FolderResponse result;
-//		List<FilesBean> fileList = new ArrayList<FilesBean>();
-//		FolderBean folderBean = new FolderBean();
-//
-//		folderBean.setCreated(folder.getCreated());
-//		if( CommonUtils.isNotEmpty(folder.getLink())) {
-//			folderBean.setLink(folder.getLink());
-//		}
-//		
-//		if (CommonUtils.isEmpty(folder.getFolderName())) {
-//			folderBean.setFolderName(Long.toString(System.currentTimeMillis()));
-//		} else {
-//			folderBean.setFolderName(folder.getFolderName());
-//		}
-//		folderBean.setUserName(folder.getUserName());
-//
-//		FolderBean folderBean2 = (FolderBean) insertDB(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
-//				folderBean);
-//78
-//		if (CollectionUtils.isNotEmpty(folder.getFiles())) {
-//			for (FilesBean file : folder.getFiles()) {
-//				file.setFolderId(folderBean2.getId());
-//				fileList.add(createFile(file));
-//			}
-//		}
-//		result = mongoManager.getObjectByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "id",
-//				folderBean2.getId(), FolderResponse.class);
-//		result.setFiles(fileList);
-//		return result;
-//	}
-
-	
 
 	public FolderBean createEmptyFolder(FolderBean emptyFolder, String loginUser) throws Exception {
 		FolderBean folderFromDB = new FolderBean();
@@ -248,70 +267,66 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 
 	@Override
 	public ResponseBean makeFavouriteFolder(String folderId, String loginUser) throws Exception {
-		ResponseBean response = new ResponseBean();
+		ResponseBean response = null;
 		if (CommonUtils.isNotEmpty(folderId)) {
-
-			FolderResponse favFolder1 = mongoManager.findBy3Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
-					"id", folderId, "userName", loginUser, "favourite", false, FolderResponse.class);
-			if (favFolder1 != null) {
-				mongoManager.updateByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "_id",
-						new ObjectId(folderId), "favourite", true);
-				response.setMessage(StatusCodes.FAVOURITE_MESSAGE);
-			} else {
-				mongoManager.updateByField(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "_id",
-						new ObjectId(folderId), "favourite", false);
-				response.setMessage(StatusCodes.UNFAVOURITE_MESSAGE);
+			FolderBean favFolderFromdDB= mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, folderId, FolderBean.class);
+			try {
+				if( favFolderFromdDB != null) {
+					
+					if( favFolderFromdDB.isFavourite() == false) {
+						mongoManager.updateByObjectId(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "_id",
+								new ObjectId(folderId), "favourite", true);
+						 response = new ResponseBean(StatusCodes.SUCCESS_MESSAGE, " Favorite Success");
+					}else {
+						mongoManager.updateByObjectId(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "_id",
+								new ObjectId(folderId), "favourite", false);
+						 response = new ResponseBean(StatusCodes.SUCCESS_MESSAGE, " Unfavorite Success");
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new BgipException(StatusCodes.NOT_FOUND, " Folder ID Not Found ");
 			}
-
+		}else {
+			throw new BgipException(StatusCodes.NOT_FOUND, " folderId must not be null/empty ");
 		}
 		return response;
-		// mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
 	}
 	
 	
 	@Override
 	public ResponseBean makeFavouriteFile(String fileId, String loginUser) throws Exception {
-		ResponseBean response = new ResponseBean();
-		System.out.println("fileId : "+fileId+" login user :"+loginUser);
-		System.out.println("makeFavouriteFile List 3: "+System.currentTimeMillis());
+		ResponseBean response = null;
 		if (CommonUtils.isNotEmpty(fileId)) {
-
-			FilesBean fileFromDB = mongoManager.findBy3Fields(com.bgip.constants.BgipConstants.FILES_COLLECTION,
-					"id", fileId, "userName", loginUser, "favourite", false, FilesBean.class);
-			System.out.println("makeFavouriteFile List 4: "+System.currentTimeMillis());
-
-			
-			if (fileFromDB != null) {
-				System.out.println("makeFavouriteFile List 5: "+System.currentTimeMillis());
-
-				mongoManager.updateByField(com.bgip.constants.BgipConstants.FILES_COLLECTION, "_id",
-						new ObjectId(fileId), "favourite", true);
-				response.setMessage(StatusCodes.FAVOURITE_MESSAGE);
-			} else {
-				mongoManager.updateByField(com.bgip.constants.BgipConstants.FILES_COLLECTION, "_id",
-						new ObjectId(fileId), "favourite", false);
-				response.setMessage(StatusCodes.UNFAVOURITE_MESSAGE);
+			FilesBean favFolderFromdDB= mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FILES_COLLECTION, fileId, FilesBean.class);
+			try {
+				if( favFolderFromdDB != null) {
+					
+					if( favFolderFromdDB.isFavourite() == false) {
+						mongoManager.updateByObjectId(com.bgip.constants.BgipConstants.FILES_COLLECTION, "_id",
+								new ObjectId(fileId), "favourite", true);
+						 response = new ResponseBean(StatusCodes.SUCCESS_MESSAGE, " Favorite Success");
+					}else {
+						mongoManager.updateByObjectId(com.bgip.constants.BgipConstants.FILES_COLLECTION, "_id",
+								new ObjectId(fileId), "favourite", false);
+						 response = new ResponseBean(StatusCodes.SUCCESS_MESSAGE, " Unfavorite Success");
+					}
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new BgipException(StatusCodes.NOT_FOUND, " File ID Not Found ");
 			}
-		}
-		return response;
-		// mongoManager.getObjectByID(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
-	}
-
-	
-	
-	@Override
-	public List<FolderResponse> getFavouriteFolders(String loginUser) throws Exception {
-		List<FolderResponse> favFolderList = null;
-		System.out.println("folder List 3: "+System.currentTimeMillis());
-		favFolderList = mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, 
-				"userName", loginUser, "favourite", true, FolderResponse.class);
-		System.out.println("folder List 4: "+System.currentTimeMillis());
-		if( favFolderList == null ) {
-			throw new BgipException(StatusCodes.NOT_FOUND, "You don't have favourite Foulder List");
+		}else {
+			throw new BgipException(StatusCodes.NOT_FOUND, " File ID must not be null/empty ");
 		}
 		
-		return favFolderList;
+		
+		return response;
 	}
+
+	
 
 	
 	@Override

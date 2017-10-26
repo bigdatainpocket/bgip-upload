@@ -28,7 +28,9 @@ public interface UploadDAO {
 	
 	public ResponseBean makeFavouriteFile( String fileId, String loginUser) throws Exception;
 	
-	public List<FolderResponse> getFavouriteFolders( String loginUser) throws Exception;
+	public FolderResponse getFavouriteFolders( String loginUser) throws Exception;
+	
+	
 	
 	public List<FilesBean> getFavouriteFiles( String loginUser) throws Exception;
 	
