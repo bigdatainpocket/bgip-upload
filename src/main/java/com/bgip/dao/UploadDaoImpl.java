@@ -34,75 +34,129 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		
 		folderRequest.setUserName(loginUser);
 		FolderRequest finalResult = new FolderRequest();
+		List<FilesBean> fileList = new ArrayList<FilesBean>();
 
+		
+	
+		
+		
+		
 		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
-				finalResult = createFolder(folderRequest);
+			finalResult = createFolder(folderRequest);
 		}else {
 			
-			if( CommonUtils.isNotEmpty(folderRequest.getParentFolderId())) {
-				finalResult.setFolderName("untitled_folder");
-				finalResult = createFolder(folderRequest);
+			if( !folderRequest.getParentFolderId().equals("0")  ) {
+				if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+					for( FilesBean file : folderRequest.getFileList()) {
+						file.setUserName(loginUser);
+						file.setFolderId(folderRequest.getParentFolderId());
+						try {
+							fileList.add(createFile(file));
+							finalResult.setFileList(fileList);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				
+				
+				
+			
 			}else {
 				
 				if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
-					finalResult.setFolderName("untitled_folder");
-					finalResult.setParentFolderId("0");
-					finalResult = createFolder(folderRequest);
-				}else {
-					throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
+//					finalResult.setParentFolderId(null);
+					for( FilesBean file : folderRequest.getFileList()) {
+						file.setUserName(loginUser);
+						try {
+//							return fileList.add(createFile(file));
+							fileList.add(createFile(file));
+							finalResult.setFileList(fileList);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
+			
 		}
-		
-		
-		
-		
+			
 		
 //		
-//		
-//		if( CommonUtils.isEmpty(folderRequest.getUserName()) && CollectionUtils.isEmpty(folderRequest.getFileList())) {
-//			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
-//		}
-//		
-//		if( CollectionUtils.isEmpty(folderRequest.getFileList())) {
-//			throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! file list doesn't empty ");
-//		}
-//		
-//		if( CommonUtils.isEmpty(folderRequest.getFolderName()) && CommonUtils.isNotEmpty(folderRequest.getParentFolderId())) {
-//			
-//		}
 //		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
+//			finalResult = createFolder(folderRequest);
 //		}else {
-//			if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
-//				for( FilesBean file : folderRequest.getFileList()) {
-//					file.setUserName(loginUser);
-//					try {
-//						fileList.add(createFile(file));
-//					} catch (Exception e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
+//			
+//			if( !folderRequest.getParentFolderId().equals("0")  ) {
+//				finalResult =  createFolder(folderRequest);
+//			
+//			}else {
+//				
+//				if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+////					finalResult.setParentFolderId(null);
+//					for( FilesBean file : folderRequest.getFileList()) {
+//						file.setUserName(loginUser);
+//						try {
+////							return fileList.add(createFile(file));
+//							fileList.add(createFile(file));
+//							finalResult.setFileList(fileList);
+//							
+//						} catch (Exception e) {
+//							e.printStackTrace();
+//						}
 //					}
 //				}
 //			}
-//			finalResult.setFileList(fileList);
+//			
 //		}
-		
+//		
+//		
+//		if( CommonUtils.isNotEmpty(folderRequest.getFolderName())) {
+//			System.out.println(" folderRequest.getFolderName() : ");
+//			finalResult = createFolder(folderRequest);
+//		}else {
+//			System.out.println(" folderRequest.getFolderName() else part: ");
+//			
+//			System.out.println(" folderRequest.getParentFolderId(): "+folderRequest.getParentFolderId());
+//			
+//			if( CommonUtils.isEmpty(folderRequest.getParentFolderId()) || folderRequest.getParentFolderId() == 0) {
+//				System.out.println(" folderRequest.getParentFolderId() : ");
+//				finalResult.setFolderName("untitled_folder");
+//				finalResult = createFolder(folderRequest);
+//			}else {
+//				
+//				System.out.println(" folderRequest.getParentFolderId() else part: ");
+//				
+//				if( CollectionUtils.isNotEmpty(folderRequest.getFileList())) {
+//					System.out.println(" folderRequest.getFileList()");
+////					finalResult.setFolderName("untitled_folder");
+////					finalResult.setParentFolderId("0");
+////					finalResult = createFolder(folderRequest);
+//					
+//				}else {
+//					throw new BgipException(StatusCodes.NOT_FOUND, " Error in File Upload Api !! Please Upload valid File/Folder  ");
+//				}
+//			}
+//		}
 		return finalResult;
 	}
 	
-	// Create File by providing FolderId
-		public FilesBean createFile(FilesBean file) throws Exception {
-			FilesBean fileFromDB = new FilesBean();
-			if (file != null) {
-				if(CommonUtils.isEmpty(file.getFolderId()) ) {
-					file.setFolderId("0");
-				}
-				fileFromDB = (FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file);
+	
+	
+	public FilesBean createFile(FilesBean file) throws Exception {
+		FilesBean fileFromDB = new FilesBean();
+		if (file != null) {
+			if(CommonUtils.isEmpty(file.getFolderId()) ) {
+				file.setFolderId("0");
 			}
-			return fileFromDB;
+			fileFromDB = (FilesBean) insertDB(com.bgip.constants.BgipConstants.FILES_COLLECTION, file);
 		}
-	
-	
+		return fileFromDB;
+	}
+
+
 	
 	
 	public FolderRequest createFolder( FolderRequest folderRequest) throws BgipException{
@@ -168,6 +222,28 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		return FolderFromDB;
 	}
 	
+	public List<FolderBean> getSubFolderList(String folderId, String loginUser) throws Exception {
+		List<FolderBean> folderList = new ArrayList<FolderBean>();
+		try {
+			folderList = mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION,
+					"parentFolderId", folderId, "userName", loginUser, FolderBean.class);
+			System.out.println("  folderId : "+folderId);
+			System.out.println(" Foldr list : "+folderList);
+			
+//			folderList = mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "parentFolderId", folderId,
+//					"userName", loginUser, FolderBean.class);
+			return folderList;
+		}catch (Exception e) {
+			e.printStackTrace();
+			throw new BgipException(StatusCodes.NOT_FOUND, " Error in getSubFolderList Api !! file list doesn't exist ");
+		}
+		
+	}
+
+
+	
+	
+	
 	public FolderResponse getAllDriveFolders(String loginUser) throws Exception {
 		FolderResponse FolderFromDB = new FolderResponse();
 		FolderFromDB.setUserName(loginUser);
@@ -212,9 +288,6 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		}
 		return finalResult;
 	}
-
-	
-	
 	
 	
 	
@@ -233,17 +306,6 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		}
 	}
 	
-	public List<FolderBean> getSubFolderList(String folderId, String loginUser) throws Exception {
-		try {
-			return mongoManager.getObjectsBy2Fields(com.bgip.constants.BgipConstants.FOLDER_COLLECTION, "parentFolderId", folderId,
-					"userName", loginUser, FolderBean.class);
-		}catch (Exception e) {
-			e.printStackTrace();
-			throw new BgipException(StatusCodes.NOT_FOUND, " Error in getSubFolderList Api !! file list doesn't exist ");
-		}
-		
-	}
-
 
 	public FolderBean createEmptyFolder(FolderBean emptyFolder, String loginUser) throws Exception {
 		FolderBean folderFromDB = new FolderBean();
@@ -344,9 +406,6 @@ public class UploadDaoImpl extends BaseDAO implements UploadDAO {
 		return favFolderList;
 	}
 
-	
-	
-	
 	
 
 
